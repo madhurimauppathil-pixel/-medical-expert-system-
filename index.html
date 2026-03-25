@@ -3,7 +3,872 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medical Expert System — Rule-Base<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Medical Expert System — Rule-Based Inference Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --white:   #ffffff;
+  --gray-50: #f8fafc;
+  --gray-100:#f1f5f9;
+  --gray-200:#e2e8f0;
+  --gray-300:#cbd5e1;
+  --gray-400:#94a3b8;
+  --gray-500:#64748b;
+  --gray-600:#475569;
+  --gray-700:#334155;
+  --gray-800:#1e293b;
+  --gray-900:#0f172a;
+  --blue-50:  #f0fdfa;
+  --blue-100: #ccfbf1;
+  --blue-500: #14b8a6;
+  --blue-600: #0d9488;
+  --blue-700: #0f766e;
+  --green-50: #f0fdf4;
+  --green-100:#dcfce7;
+  --green-500:#22c55e;
+  --green-600:#16a34a;
+  --green-700:#15803d;
+  --yellow-50:#fefce8;
+  --yellow-100:#fef9c3;
+  --yellow-600:#ca8a04;
+  --yellow-700:#a16207;
+  --red-50:   #fef2f2;
+  --red-100:  #fee2e2;
+  --red-500:  #ef4444;
+  --red-600:  #dc2626;
+  --orange-50:#fff7ed;
+  --orange-100:#ffedd5;
+  --orange-600:#ea580c;
+}
+html,body{height:100%;background:var(--gray-50);color:var(--gray-900);font-family:'Inter',sans-serif;font-size:14px;line-height:1.5;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--gray-100);}
+::-webkit-scrollbar-thumb{background:var(--gray-300);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--gray-400);}
+
+/* ── LAYOUT ── */
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+
+/* ── HEADER ── */
+header{
+  background:var(--white);
+  border-bottom:1px solid var(--gray-200);
+  padding:0 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  height:60px;flex-shrink:0;
+  box-shadow:0 1px 3px rgba(0,0,0,.05);
+}
+.header-brand{display:flex;align-items:center;gap:12px;}
+.header-icon{
+  width:36px;height:36px;border-radius:8px;
+  background:var(--blue-600);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.header-icon svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.header-title{font-size:16px;font-weight:700;color:var(--gray-900);letter-spacing:-.3px;}
+.header-sub{font-size:12px;color:var(--gray-400);margin-top:1px;}
+.header-right{display:flex;align-items:center;gap:8px;}
+.mode-toggle{display:flex;background:var(--gray-100);border-radius:8px;padding:4px;gap:2px;}
+.mt-btn{padding:6px 16px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--gray-500);transition:all .15s;font-family:'Inter',sans-serif;}
+.mt-btn.active{background:var(--white);color:var(--gray-900);box-shadow:0 1px 3px rgba(0,0,0,.1);}
+
+/* ── KPI STRIP ── */
+.kpi-strip{
+  background:var(--white);border-bottom:1px solid var(--gray-200);
+  display:flex;padding:0 24px;flex-shrink:0;
+}
+.kpi-item{
+  padding:12px 20px;display:flex;align-items:center;gap:12px;
+  border-right:1px solid var(--gray-100);
+}
+.kpi-item:last-child{border-right:none;}
+.kpi-icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.kpi-val{font-size:20px;font-weight:700;color:var(--gray-900);font-family:'JetBrains Mono',monospace;line-height:1;}
+.kpi-lbl{font-size:11px;color:var(--gray-500);margin-top:1px;}
+
+/* ── MAIN ── */
+.main{display:flex;flex:1;overflow:hidden;}
+
+/* ── LEFT SIDEBAR ── */
+.sidebar{
+  width:280px;flex-shrink:0;background:var(--white);
+  border-right:1px solid var(--gray-200);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.sidebar-section{padding:16px;border-bottom:1px solid var(--gray-100);flex-shrink:0;}
+.sidebar-section.flex-grow{flex:1;overflow-y:auto;}
+.section-title{font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
+
+/* SYMPTOM GRID */
+.sym-grid{display:flex;flex-wrap:wrap;gap:6px;}
+.sym-chip{
+  padding:4px 10px;border-radius:6px;font-size:12px;font-weight:500;
+  cursor:pointer;border:1px solid var(--gray-200);background:var(--gray-50);
+  color:var(--gray-600);transition:all .13s;user-select:none;
+}
+.sym-chip:hover{border-color:var(--blue-500);color:var(--blue-600);background:var(--blue-50);}
+.sym-chip.active{background:var(--blue-600);color:var(--white);border-color:var(--blue-600);}
+
+/* SELECTED FACTS */
+.fact-list{display:flex;flex-direction:column;gap:4px;max-height:130px;overflow-y:auto;}
+.fact-item{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--blue-50);border:1px solid var(--blue-100);
+  border-radius:6px;padding:6px 10px;font-size:12px;font-weight:500;color:var(--blue-700);
+}
+.fact-item-remove{background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 6px;transition:color .1s;}
+.fact-item-remove:hover{color:var(--red-500);}
+.no-facts{font-size:12px;color:var(--gray-400);text-align:center;padding:8px 0;}
+
+/* ACTION BUTTONS */
+.btn{
+  width:100%;padding:10px 16px;border-radius:8px;
+  font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px;
+}
+.btn+.btn{margin-top:6px;}
+.btn-primary{background:var(--blue-600);color:var(--white);border:1px solid var(--blue-600);}
+.btn-primary:hover:not(:disabled){background:var(--blue-700);}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+.btn-secondary{background:var(--white);color:var(--gray-700);border:1px solid var(--gray-200);}
+.btn-secondary:hover{background:var(--gray-50);border-color:var(--gray-300);}
+.btn-danger{background:var(--white);color:var(--red-600);border:1px solid var(--gray-200);}
+.btn-danger:hover{background:var(--red-50);border-color:var(--red-100);}
+
+/* SCENARIOS */
+.scenario-list{display:flex;flex-direction:column;gap:3px;}
+.scenario-btn{
+  padding:10px 12px;border-radius:8px;cursor:pointer;
+  border:1px solid transparent;background:transparent;
+  text-align:left;width:100%;transition:all .13s;
+}
+.scenario-btn:hover{background:var(--gray-50);border-color:var(--gray-200);}
+.scenario-btn.active{background:var(--blue-50);border-color:var(--blue-100);}
+.sc-name{font-size:13px;font-weight:600;color:var(--gray-700);}
+.scenario-btn.active .sc-name{color:var(--blue-700);}
+.sc-tags{font-size:11px;color:var(--gray-400);margin-top:2px;font-family:'JetBrains Mono',monospace;}
+
+/* ── CENTER ── */
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* TABS */
+.tabs{
+  background:var(--white);border-bottom:1px solid var(--gray-200);
+  display:flex;padding:0 24px;flex-shrink:0;
+}
+.tab-btn{
+  padding:14px 18px;font-size:13px;font-weight:500;color:var(--gray-500);
+  cursor:pointer;border-bottom:2px solid transparent;transition:all .13s;
+  display:flex;align-items:center;gap:6px;
+}
+.tab-btn:hover{color:var(--gray-700);}
+.tab-btn.active{color:var(--blue-600);border-bottom-color:var(--blue-600);font-weight:600;}
+.tab-count{font-size:11px;background:var(--gray-100);color:var(--gray-500);padding:1px 6px;border-radius:10px;font-family:'JetBrains Mono',monospace;}
+
+.tab-pane{display:none;flex:1;overflow:hidden;flex-direction:column;}
+.tab-pane.active{display:flex;}
+
+/* STATUS BAR */
+.status-bar{
+  background:var(--white);border-top:1px solid var(--gray-200);
+  padding:8px 24px;display:flex;align-items:center;gap:8px;
+  font-size:12px;color:var(--gray-500);flex-shrink:0;
+}
+.status-indicator{width:8px;height:8px;border-radius:50%;background:var(--gray-300);flex-shrink:0;}
+.status-indicator.running{background:var(--yellow-600);animation:pulse 1s infinite;}
+.status-indicator.success{background:var(--green-500);}
+.status-indicator.error{background:var(--red-500);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* ── Q&A PANE ── */
+.qa-container{flex:1;overflow-y:auto;padding:32px;display:flex;flex-direction:column;align-items:center;gap:16px;background:var(--gray-50);}
+.qa-progress-wrap{width:100%;max-width:600px;}
+.qa-progress-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--gray-500);margin-bottom:8px;}
+.qa-progress-bar{height:4px;background:var(--gray-200);border-radius:4px;overflow:hidden;}
+.qa-progress-fill{height:4px;background:var(--blue-600);border-radius:4px;transition:width .4s ease;}
+
+.qa-answered{
+  width:100%;max-width:600px;
+  background:var(--white);border:1px solid var(--gray-200);border-radius:10px;
+  padding:12px 16px;display:flex;align-items:center;justify-content:space-between;
+  opacity:.6;
+}
+.qa-answered-q{font-size:13px;color:var(--gray-600);}
+.qa-answered-a{font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.qa-answered-a.yes{color:var(--green-600);}
+.qa-answered-a.no{color:var(--gray-400);}
+
+.qa-card{
+  width:100%;max-width:600px;
+  background:var(--white);border:1px solid var(--gray-200);border-radius:12px;
+  overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.06);
+}
+.qa-card-header{padding:24px 24px 16px;border-bottom:1px solid var(--gray-100);}
+.qa-step{font-size:11px;font-weight:600;color:var(--blue-600);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.qa-question{font-size:18px;font-weight:600;color:var(--gray-900);line-height:1.4;}
+.qa-hint{font-size:12px;color:var(--gray-400);margin-top:6px;font-family:'JetBrains Mono',monospace;}
+.qa-card-body{padding:20px 24px;display:flex;gap:12px;}
+.qa-answer-btn{
+  flex:1;padding:14px;border-radius:8px;font-family:'Inter',sans-serif;
+  font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid;
+}
+.qa-yes{background:var(--green-50);border-color:var(--green-500);color:var(--green-700);}
+.qa-yes:hover{background:var(--green-600);color:var(--white);border-color:var(--green-600);}
+.qa-no{background:var(--gray-50);border-color:var(--gray-300);color:var(--gray-600);}
+.qa-no:hover{background:var(--gray-100);color:var(--gray-900);}
+
+/* ── TRACE PANE ── */
+.trace-container{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:12px;background:var(--gray-50);}
+
+.empty-state{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+}
+.empty-icon{
+  width:56px;height:56px;border-radius:12px;background:var(--white);
+  border:1px solid var(--gray-200);display:flex;align-items:center;justify-content:center;
+}
+.empty-icon svg{width:28px;height:28px;stroke:var(--gray-300);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
+.empty-title{font-size:15px;font-weight:600;color:var(--gray-500);}
+.empty-desc{font-size:13px;color:var(--gray-400);}
+
+/* ALERT */
+.alert-banner{
+  padding:14px 16px;border-radius:8px;
+  background:var(--red-50);border:1px solid var(--red-100);
+  border-left:4px solid var(--red-500);
+  display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--red-700);
+  flex-shrink:0;
+}
+.alert-dot{width:8px;height:8px;border-radius:50%;background:var(--red-500);flex-shrink:0;animation:pulse 1.2s infinite;}
+
+/* ITER LABEL */
+.iter-label{display:flex;align-items:center;gap:12px;padding:4px 0;}
+.iter-label-text{font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
+.iter-label-line{flex:1;height:1px;background:var(--gray-200);}
+
+/* INFERENCE CARD */
+.inf-card{
+  background:var(--white);border:1px solid var(--gray-200);border-radius:10px;
+  overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);
+}
+.inf-card-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;border-bottom:1px solid var(--gray-100);background:var(--white);
+}
+.inf-card-title{font-size:13px;font-weight:600;color:var(--gray-800);}
+.badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;}
+.badge-init{background:var(--gray-100);color:var(--gray-600);}
+.badge-syndrome{background:var(--yellow-100);color:var(--yellow-700);}
+.badge-diagnosis{background:var(--blue-100);color:var(--blue-700);}
+.badge-treatment{background:var(--green-100);color:var(--green-700);}
+.badge-alert{background:var(--red-100);color:var(--red-700);}
+.badge-conf{background:var(--gray-100);color:var(--gray-600);}
+
+.inf-card-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+.inf-row{display:flex;gap:14px;}
+.inf-key{width:90px;flex-shrink:0;font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.8px;padding-top:1px;}
+.inf-val{font-size:12px;color:var(--gray-700);font-family:'JetBrains Mono',monospace;line-height:1.7;}
+.inf-val.highlight-yellow{color:var(--yellow-700);font-weight:500;}
+.inf-val.highlight-blue{color:var(--blue-700);font-weight:500;}
+.inf-val.highlight-green{color:var(--green-700);font-weight:500;}
+.inf-val.highlight-red{color:var(--red-700);font-weight:500;}
+.inf-val.muted{color:var(--gray-400);font-style:italic;}
+
+/* CONFIDENCE */
+.conf-section{padding:14px 16px;border-top:1px solid var(--gray-100);}
+.conf-title{font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;}
+.conf-row{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+.conf-label{font-size:12px;color:var(--gray-700);width:170px;flex-shrink:0;text-transform:capitalize;font-family:'JetBrains Mono',monospace;}
+.conf-bar-track{flex:1;height:6px;background:var(--gray-100);border-radius:3px;overflow:hidden;}
+.conf-bar-fill{height:6px;border-radius:3px;transition:width .7s ease;}
+.conf-pct{font-size:12px;font-weight:700;min-width:36px;text-align:right;font-family:'JetBrains Mono',monospace;}
+
+/* FALLBACK */
+.fallback-card{
+  background:var(--yellow-50);border:1px solid var(--yellow-100);
+  border-left:4px solid var(--yellow-600);border-radius:8px;padding:16px;
+}
+.fb-title{font-size:14px;font-weight:700;color:var(--yellow-700);margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+.fb-body{font-size:13px;color:var(--gray-600);line-height:1.6;}
+.fb-suggestions{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
+.fb-sug-item{
+  display:flex;gap:8px;font-size:12px;color:var(--gray-600);
+  font-family:'JetBrains Mono',monospace;line-height:1.5;
+}
+.fb-sug-item::before{content:'→';color:var(--yellow-600);flex-shrink:0;font-weight:700;}
+.fb-cta{margin-top:12px;padding:10px 14px;background:var(--yellow-100);border-radius:6px;font-size:12px;font-weight:600;color:var(--yellow-700);}
+
+/* SUMMARY */
+.summary-card{
+  background:var(--green-50);border:1px solid var(--green-100);
+  border-left:4px solid var(--green-600);border-radius:8px;overflow:hidden;
+}
+.summary-header{
+  padding:14px 16px;border-bottom:1px solid var(--green-100);
+  font-size:14px;font-weight:700;color:var(--green-700);
+  display:flex;align-items:center;gap:8px;
+}
+.summary-body{padding:16px;display:flex;flex-direction:column;gap:14px;}
+.summary-group-title{font-size:11px;font-weight:600;color:var(--gray-500);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
+.tag-row{display:flex;flex-wrap:wrap;gap:6px;}
+.tag{font-size:12px;font-weight:500;padding:4px 12px;border-radius:20px;}
+.tag-yellow{background:var(--yellow-100);color:var(--yellow-700);}
+.tag-blue{background:var(--blue-100);color:var(--blue-700);}
+.tag-green{background:var(--green-100);color:var(--green-700);}
+.tag-red{background:var(--red-100);color:var(--red-700);}
+
+/* ── RULES PANE ── */
+.rules-container{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:4px;background:var(--gray-50);}
+.rules-tier-header{font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;padding:14px 0 6px;display:flex;align-items:center;gap:10px;}
+.rules-tier-header::after{content:'';flex:1;height:1px;background:var(--gray-200);}
+.rule-card{
+  background:var(--white);border:1px solid var(--gray-200);border-radius:8px;
+  display:flex;overflow:hidden;transition:all .18s;
+}
+.rule-card.fired{border-color:var(--green-500);border-left:4px solid var(--green-500);}
+.rule-id{
+  width:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  background:var(--gray-50);border-right:1px solid var(--gray-200);
+  font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--gray-400);
+  transition:all .18s;
+}
+.rule-card.fired .rule-id{background:var(--green-50);color:var(--green-700);border-color:var(--green-200);}
+.rule-body{flex:1;padding:10px 14px;}
+.rule-if{font-size:12px;color:var(--gray-500);font-family:'JetBrains Mono',monospace;line-height:1.5;}
+.rule-if em{color:var(--yellow-700);font-style:normal;font-weight:600;}
+.rule-then{font-size:12px;color:var(--green-700);font-family:'JetBrains Mono',monospace;font-weight:500;margin-top:2px;}
+.rule-desc{font-size:11px;color:var(--gray-400);margin-top:3px;font-style:italic;}
+
+/* ── RIGHT PANEL ── */
+.right-panel{
+  width:220px;flex-shrink:0;background:var(--white);
+  border-left:1px solid var(--gray-200);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.rp-section{padding:16px;border-bottom:1px solid var(--gray-100);flex-shrink:0;}
+.rp-section.grow{flex:1;display:flex;flex-direction:column;min-height:0;border-bottom:none;}
+.rp-title{font-size:11px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
+.metric-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--gray-50);}
+.metric-row:last-child{border-bottom:none;}
+.metric-label{font-size:12px;color:var(--gray-500);}
+.metric-value{font-size:14px;font-weight:700;color:var(--gray-900);font-family:'JetBrains Mono',monospace;}
+.log-area{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:2px;}
+.log-line{display:flex;gap:6px;font-size:11px;line-height:1.7;font-family:'JetBrains Mono',monospace;}
+.log-ts{color:var(--gray-300);flex-shrink:0;}
+.log-msg{color:var(--gray-500);}
+.log-line.ok .log-msg{color:var(--green-600);}
+.log-line.err .log-msg{color:var(--red-600);}
+.log-line.info .log-msg{color:var(--blue-600);}
+.log-line.fire .log-msg{color:var(--yellow-700);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-brand">
+      <div class="header-icon">
+        <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <div>
+        <div class="header-title">Medical Expert System</div>
+        <div class="header-sub">Rule-Based Forward Chaining Inference Engine</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="mode-toggle">
+        <button class="mt-btn active" id="mt-manual" onclick="setMode('manual')">Manual Input</button>
+        <button class="mt-btn" id="mt-qa" onclick="setMode('qa')">Interview Mode</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- KPI STRIP -->
+  <div class="kpi-strip">
+    <div class="kpi-item">
+      <div class="kpi-icon" style="background:var(--blue-50);">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--blue-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div>
+        <div class="kpi-val" id="kv-f">0</div>
+        <div class="kpi-lbl">Total Facts</div>
+      </div>
+    </div>
+    <div class="kpi-item">
+      <div class="kpi-icon" style="background:var(--yellow-50);">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--yellow-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </div>
+      <div>
+        <div class="kpi-val" id="kv-r">0</div>
+        <div class="kpi-lbl">Rules Fired</div>
+      </div>
+    </div>
+    <div class="kpi-item">
+      <div class="kpi-icon" style="background:var(--green-50);">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--green-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div>
+        <div class="kpi-val" id="kv-d">0</div>
+        <div class="kpi-lbl">Derived Facts</div>
+      </div>
+    </div>
+    <div class="kpi-item">
+      <div class="kpi-icon" style="background:var(--gray-100);">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--gray-500)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+      </div>
+      <div>
+        <div class="kpi-val" id="kv-i">0</div>
+        <div class="kpi-lbl">Iterations</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <div class="sidebar-section" id="sym-section">
+        <div class="section-title">Select Symptoms</div>
+        <div class="sym-grid" id="sym-grid"></div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-title">Active Facts</div>
+        <div class="fact-list" id="fact-list">
+          <div class="no-facts">No symptoms selected</div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <button class="btn btn-primary" id="run-btn" onclick="runInference()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Run Inference
+        </button>
+        <button class="btn btn-secondary" onclick="clearAll()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+          Clear All
+        </button>
+      </div>
+
+      <div class="sidebar-section flex-grow">
+        <div class="section-title">Quick Scenarios</div>
+        <div class="scenario-list" id="scenario-list"></div>
+      </div>
+
+    </div>
+
+    <!-- CENTER CONTENT -->
+    <div class="content">
+      <div class="tabs">
+        <div class="tab-btn active" onclick="switchTab('trace', this)">Inference Trace</div>
+        <div class="tab-btn" onclick="switchTab('rules', this)">Rule Base <span class="tab-count" id="rule-count"></span></div>
+      </div>
+
+      <!-- TRACE PANE -->
+      <div class="tab-pane active" id="pane-trace">
+
+        <!-- Q&A -->
+        <div id="qa-container" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
+          <div class="qa-container" id="qa-wrap"></div>
+        </div>
+
+        <!-- TRACE OUTPUT -->
+        <div class="trace-container" id="trace-output">
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </div>
+            <div class="empty-title">No Inference Run</div>
+            <div class="empty-desc">Select symptoms from the left panel and click Run Inference</div>
+          </div>
+        </div>
+
+        <div class="status-bar">
+          <div class="status-indicator" id="status-dot"></div>
+          <span id="status-text">Ready — select symptoms and run inference, or use Interview Mode.</span>
+        </div>
+      </div>
+
+      <!-- RULES PANE -->
+      <div class="tab-pane" id="pane-rules">
+        <div class="rules-container" id="rules-container"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="right-panel">
+      <div class="rp-section">
+        <div class="rp-title">Session Metrics</div>
+        <div>
+          <div class="metric-row"><span class="metric-label">Initial facts</span><span class="metric-value" id="m-i">—</span></div>
+          <div class="metric-row"><span class="metric-label">New derived</span><span class="metric-value" id="m-d">—</span></div>
+          <div class="metric-row"><span class="metric-label">Rules fired</span><span class="metric-value" id="m-r">—</span></div>
+          <div class="metric-row"><span class="metric-label">Iterations</span><span class="metric-value" id="m-it">—</span></div>
+          <div class="metric-row"><span class="metric-label">Status</span><span class="metric-value" id="m-s" style="font-size:12px">—</span></div>
+        </div>
+      </div>
+      <div class="rp-section grow">
+        <div class="rp-title">Activity Log</div>
+        <div class="log-area" id="log-area"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+var KB=[
+  {id:'R01',t:1,p:10,c:['fever','cough','fatigue'],o:'respiratory_syndrome',d:'Fever + cough + fatigue indicate respiratory syndrome.'},
+  {id:'R02',t:1,p:10,c:['fever','headache','stiff_neck'],o:'meningeal_syndrome',d:'Classic triad of meningeal irritation.'},
+  {id:'R03',t:1,p:10,c:['nausea','vomiting','diarrhea'],o:'gastrointestinal_syndrome',d:'GI triad — nausea, vomiting, diarrhea.'},
+  {id:'R04',t:1,p:10,c:['chest_pain','shortness_of_breath'],o:'cardiac_syndrome',d:'Chest pain with dyspnea — cardiac involvement.'},
+  {id:'R05',t:1,p:10,c:['runny_nose','sneezing','sore_throat'],o:'upper_respiratory_syndrome',d:'Upper respiratory tract involvement.'},
+  {id:'R06',t:1,p:10,c:['rash','itching','swelling'],o:'allergic_syndrome',d:'Rash, itching, swelling — allergic triad.'},
+  {id:'R07',t:1,p:10,c:['high_fever','body_ache','fatigue'],o:'flu_syndrome',d:'High fever, body ache, fatigue — flu triad.'},
+  {id:'R08',t:1,p:10,c:['abdominal_pain','fever','nausea'],o:'abdominal_syndrome',d:'Abdominal pain with fever and nausea.'},
+  {id:'R08b',t:1,p:8,c:['fever'],o:'fever_noted',d:'Fever present — monitoring for further symptoms.'},
+  {id:'R08c',t:1,p:8,c:['cough'],o:'cough_noted',d:'Cough present — possible respiratory irritation.'},
+  {id:'R08d',t:1,p:8,c:['chest_pain'],o:'chest_pain_noted',d:'Chest pain — cardiac or respiratory assessment needed.'},
+  {id:'R08e',t:1,p:8,c:['headache'],o:'headache_noted',d:'Headache — multiple conditions possible.'},
+  {id:'R08f',t:1,p:8,c:['nausea'],o:'nausea_noted',d:'Nausea — GI or systemic cause possible.'},
+  {id:'R08g',t:1,p:8,c:['rash'],o:'rash_noted',d:'Rash — possible allergic or infectious cause.'},
+  {id:'R08h',t:1,p:8,c:['runny_nose'],o:'cold_symptom_noted',d:'Runny nose — likely upper respiratory.'},
+  {id:'R08i',t:1,p:8,c:['body_ache'],o:'systemic_symptom_noted',d:'Body ache — systemic illness possible.'},
+  {id:'R08j',t:1,p:8,c:['abdominal_pain'],o:'abdominal_symptom_noted',d:'Abdominal pain — GI assessment recommended.'},
+  {id:'R09',t:2,p:5,c:['respiratory_syndrome','high_fever'],o:'diagnosis_pneumonia',d:'Respiratory syndrome + high fever suggests pneumonia.'},
+  {id:'R10',t:2,p:5,c:['respiratory_syndrome','upper_respiratory_syndrome'],o:'diagnosis_bronchitis',d:'Combined upper and lower respiratory — bronchitis.'},
+  {id:'R11',t:2,p:5,c:['meningeal_syndrome'],o:'diagnosis_meningitis',d:'Meningeal syndrome is the hallmark of meningitis.'},
+  {id:'R12',t:2,p:5,c:['gastrointestinal_syndrome'],o:'diagnosis_gastroenteritis',d:'GI syndrome — gastroenteritis likely.'},
+  {id:'R13',t:2,p:5,c:['cardiac_syndrome','high_fever'],o:'diagnosis_myocarditis',d:'Cardiac syndrome with fever — myocarditis.'},
+  {id:'R14',t:2,p:4,c:['cardiac_syndrome'],o:'diagnosis_angina',d:'Cardiac syndrome without fever — angina.'},
+  {id:'R15',t:2,p:5,c:['upper_respiratory_syndrome'],o:'diagnosis_common_cold',d:'Isolated upper respiratory — common cold.'},
+  {id:'R16',t:2,p:5,c:['allergic_syndrome'],o:'diagnosis_allergic_reaction',d:'Allergic syndrome confirmed.'},
+  {id:'R17',t:2,p:5,c:['flu_syndrome'],o:'diagnosis_influenza',d:'Flu triad — influenza.'},
+  {id:'R18',t:2,p:5,c:['abdominal_syndrome'],o:'diagnosis_appendicitis_suspected',d:'Abdominal syndrome — appendicitis workup needed.'},
+  {id:'R18b',t:2,p:3,c:['fever_noted','cough_noted'],o:'diagnosis_possible_respiratory_infection',d:'Fever and cough suggest possible respiratory infection.'},
+  {id:'R18c',t:2,p:3,c:['chest_pain_noted'],o:'diagnosis_chest_assessment_needed',d:'Chest pain requires cardiac and respiratory assessment.'},
+  {id:'R18d',t:2,p:3,c:['abdominal_symptom_noted'],o:'diagnosis_gi_assessment_needed',d:'Abdominal pain requires GI investigation.'},
+  {id:'R19',t:3,p:1,c:['diagnosis_pneumonia'],o:'treatment_antibiotics_and_rest',d:'Pneumonia — antibiotics and rest.'},
+  {id:'R20',t:3,p:1,c:['diagnosis_meningitis'],o:'treatment_emergency_hospitalisation',d:'Meningitis — immediate hospitalisation.'},
+  {id:'R21',t:3,p:1,c:['diagnosis_gastroenteritis'],o:'treatment_oral_rehydration',d:'Gastroenteritis — oral rehydration and rest.'},
+  {id:'R22',t:3,p:1,c:['diagnosis_myocarditis'],o:'treatment_cardiac_monitoring',d:'Myocarditis — urgent cardiac monitoring.'},
+  {id:'R23',t:3,p:1,c:['diagnosis_angina'],o:'treatment_nitrates_and_cardiology',d:'Angina — nitrates and cardiology referral.'},
+  {id:'R24',t:3,p:1,c:['diagnosis_common_cold'],o:'treatment_rest_and_fluids',d:'Common cold — rest and fluids.'},
+  {id:'R25',t:3,p:1,c:['diagnosis_allergic_reaction'],o:'treatment_antihistamines',d:'Allergic reaction — antihistamines.'},
+  {id:'R26',t:3,p:1,c:['diagnosis_influenza'],o:'treatment_antivirals_and_rest',d:'Influenza — antivirals and rest.'},
+  {id:'R27',t:3,p:1,c:['diagnosis_bronchitis'],o:'treatment_bronchodilators',d:'Bronchitis — bronchodilators.'},
+  {id:'R28',t:3,p:1,c:['diagnosis_appendicitis_suspected'],o:'treatment_surgical_consultation',d:'Suspected appendicitis — urgent surgical consult.'},
+  {id:'R28b',t:3,p:1,c:['diagnosis_possible_respiratory_infection'],o:'treatment_monitor_and_rest',d:'Possible respiratory infection — monitor, rest, fluids.'},
+  {id:'R28c',t:3,p:1,c:['diagnosis_chest_assessment_needed'],o:'treatment_urgent_ecg_and_review',d:'Chest pain — urgent ECG and clinical review.'},
+  {id:'R28d',t:3,p:1,c:['diagnosis_gi_assessment_needed'],o:'treatment_gi_investigation',d:'Abdominal pain — GI investigation and imaging.'},
+  {id:'R29',t:4,p:0,c:['treatment_emergency_hospitalisation'],o:'alert_critical_case',d:'Emergency hospitalisation — critical alert.'},
+  {id:'R30',t:4,p:0,c:['treatment_surgical_consultation'],o:'alert_critical_case',d:'Urgent surgical — critical alert.'},
+  {id:'R31',t:4,p:0,c:['treatment_cardiac_monitoring'],o:'alert_critical_case',d:'Cardiac monitoring — critical alert.'},
+  {id:'R32',t:4,p:0,c:['treatment_urgent_ecg_and_review'],o:'alert_urgent_review',d:'Chest pain — urgent clinical review required.'},
+];
+var SYMS=['fever','high_fever','cough','fatigue','headache','stiff_neck','nausea','vomiting','diarrhea','chest_pain','shortness_of_breath','runny_nose','sneezing','sore_throat','rash','itching','swelling','body_ache','abdominal_pain'];
+var SCS=[
+  {n:'Influenza',f:['high_fever','body_ache','fatigue','cough']},
+  {n:'Meningitis Signs',f:['fever','headache','stiff_neck']},
+  {n:'Common Cold',f:['runny_nose','sneezing','sore_throat']},
+  {n:'Allergic Reaction',f:['rash','itching','swelling']},
+  {n:'Gastroenteritis',f:['nausea','vomiting','diarrhea']},
+  {n:'Cardiac Concern',f:['chest_pain','shortness_of_breath']},
+  {n:'Partial / Mixed',f:['fever','chest_pain','runny_nose']},
+];
+var QQS=[
+  {sym:'fever',q:'Do you have a fever?',hint:'Temperature above 37.5°C (99.5°F)'},
+  {sym:'high_fever',q:'Is the fever high or severe?',hint:'Temperature above 39°C (102°F)'},
+  {sym:'cough',q:'Do you have a persistent cough?',hint:'Dry or productive cough lasting more than a day'},
+  {sym:'fatigue',q:'Are you experiencing unusual fatigue?',hint:'Tiredness beyond your normal levels'},
+  {sym:'headache',q:'Do you have a headache?',hint:'Any head pain, pressure, or throbbing'},
+  {sym:'stiff_neck',q:'Is your neck stiff or painful to move?',hint:'Difficulty flexing the neck forward toward chest'},
+  {sym:'nausea',q:'Are you feeling nauseous?',hint:'Urge to vomit or stomach unease'},
+  {sym:'vomiting',q:'Have you been vomiting?',hint:'Actual vomiting episodes'},
+  {sym:'diarrhea',q:'Do you have diarrhea?',hint:'Loose or watery stools more than 3 times today'},
+  {sym:'chest_pain',q:'Do you have chest pain or tightness?',hint:'Any discomfort, pressure, or pain in the chest'},
+  {sym:'shortness_of_breath',q:'Are you short of breath?',hint:'Difficulty breathing at rest or with light activity'},
+  {sym:'runny_nose',q:'Do you have a runny or blocked nose?',hint:'Nasal discharge or nasal congestion'},
+  {sym:'sneezing',q:'Are you sneezing frequently?',hint:'Repeated sneezing episodes'},
+  {sym:'sore_throat',q:'Do you have a sore throat?',hint:'Pain, scratchiness, or irritation in the throat'},
+  {sym:'rash',q:'Do you have a skin rash?',hint:'Any visible skin changes, eruptions, or hives'},
+  {sym:'itching',q:'Are you experiencing itching?',hint:'Skin itching, localised or widespread'},
+  {sym:'swelling',q:'Do you have any swelling?',hint:'Swollen skin, lips, tongue, or body parts'},
+  {sym:'body_ache',q:'Do you have body aches or muscle pain?',hint:'Pain or soreness in muscles or joints'},
+  {sym:'abdominal_pain',q:'Do you have abdominal pain?',hint:'Pain or discomfort in the stomach or abdomen'},
+];
+var TL={1:'Tier 1 — Symptoms to Syndrome',2:'Tier 2 — Syndrome to Diagnosis',3:'Tier 3 — Diagnosis to Treatment',4:'Tier 4 — Severity Alerts'};
+var TBADGE={1:'badge-syndrome',2:'badge-diagnosis',3:'badge-treatment',4:'badge-alert'};
+var TNAME={1:'Syndrome',2:'Diagnosis',3:'Treatment',4:'Alert'};
+var THIGH={1:'highlight-yellow',2:'highlight-blue',3:'highlight-green',4:'highlight-red'};
+
+var sel=new Set(),fired=new Set(),mode='manual',qaIdx=0,qaFacts=new Set(),qaAns=[];
+
+window.addEventListener('load',function(){
+  SYMS.forEach(function(s){
+    var el=document.createElement('div');el.className='sym-chip';el.dataset.s=s;
+    el.textContent=s.replace(/_/g,' ');
+    el.onclick=function(){toggleSym(s,el);};
+    document.getElementById('sym-grid').appendChild(el);
+  });
+  SCS.forEach(function(sc,i){
+    var el=document.createElement('div');el.className='scenario-btn';el.id='sc'+i;
+    el.innerHTML='<div class="sc-name">'+sc.n+'</div><div class="sc-tags">'+sc.f.join(', ')+'</div>';
+    el.onclick=function(){loadScenario(sc,i);};
+    document.getElementById('scenario-list').appendChild(el);
+  });
+  var lt=0;
+  KB.forEach(function(r){
+    if(r.id.match(/R\d+[b-j]$/))return;
+    if(r.t!==lt){lt=r.t;var h=document.createElement('div');h.className='rules-tier-header';h.textContent=TL[r.t];document.getElementById('rules-container').appendChild(h);}
+    var c=document.createElement('div');c.className='rule-card';c.id='rc'+r.id;
+    var conds=r.c.map(function(x){return '<em>'+x.replace(/_/g,' ')+'</em>';}).join(' AND ');
+    c.innerHTML='<div class="rule-id">'+r.id+'</div><div class="rule-body"><div class="rule-if">IF '+conds+'</div><div class="rule-then">THEN '+r.o.replace(/_/g,' ')+'</div><div class="rule-desc">'+r.d+'</div></div>';
+    document.getElementById('rules-container').appendChild(c);
+  });
+  var main=KB.filter(function(r){return !r.id.match(/[b-j]$/);});
+  document.getElementById('rule-count').textContent=main.length;
+  log('System initialised — '+KB.length+' rules loaded.','info');
+});
+
+function setMode(m){
+  mode=m;
+  document.getElementById('mt-manual').classList.toggle('active',m==='manual');
+  document.getElementById('mt-qa').classList.toggle('active',m==='qa');
+  if(m==='qa'){document.getElementById('sym-section').style.display='none';startQA();}
+  else{document.getElementById('sym-section').style.display='';document.getElementById('qa-container').style.display='none';document.getElementById('trace-output').style.display='';}
+}
+
+function startQA(){
+  qaIdx=0;qaFacts.clear();qaAns=[];
+  sel.forEach(function(s){var c=document.querySelector('[data-s="'+s+'"]');if(c)c.classList.remove('active');});
+  sel.clear();renderFactList();
+  document.getElementById('qa-container').style.display='flex';
+  document.getElementById('trace-output').style.display='none';
+  resetMetrics();renderQA();
+  log('Interview mode started.','info');
+}
+
+function renderQA(){
+  var wrap=document.getElementById('qa-wrap');wrap.innerHTML='';
+  var total=QQS.length,pct=Math.round((qaIdx/total)*100);
+  var prog=document.createElement('div');prog.className='qa-progress-wrap';
+  prog.innerHTML='<div class="qa-progress-meta"><span>Question '+(Math.min(qaIdx+1,total))+' of '+total+'</span><span>'+pct+'% complete</span></div><div class="qa-progress-bar"><div class="qa-progress-fill" style="width:'+pct+'%"></div></div>';
+  wrap.appendChild(prog);
+  qaAns.forEach(function(a){
+    var el=document.createElement('div');el.className='qa-answered';
+    el.innerHTML='<span class="qa-answered-q">'+a.q+'</span><span class="qa-answered-a '+(a.v?'yes':'no')+'">'+(a.v?'Yes':'No')+'</span>';
+    wrap.appendChild(el);
+  });
+  if(qaIdx>=QQS.length){
+    qaAns.forEach(function(a){if(a.v)qaFacts.add(a.sym);});
+    sel=new Set(qaFacts);
+    document.querySelectorAll('.sym-chip').forEach(function(c){if(sel.has(c.dataset.s))c.classList.add('active');});
+    renderFactList();
+    document.getElementById('qa-container').style.display='none';
+    document.getElementById('trace-output').style.display='';
+    runInference();return;
+  }
+  var qq=QQS[qaIdx];
+  var card=document.createElement('div');card.className='qa-card';
+  card.innerHTML='<div class="qa-card-header"><div class="qa-step">Question '+(qaIdx+1)+' of '+total+'</div><div class="qa-question">'+qq.q+'</div><div class="qa-hint">'+qq.hint+'</div></div>'
+    +'<div class="qa-card-body"><button class="qa-answer-btn qa-yes" onclick="answerQA(true)">✓ &nbsp; Yes</button><button class="qa-answer-btn qa-no" onclick="answerQA(false)">✗ &nbsp; No</button></div>';
+  wrap.appendChild(card);
+  wrap.scrollTop=wrap.scrollHeight;
+}
+
+function answerQA(v){
+  var qq=QQS[qaIdx];qaAns.push({sym:qq.sym,q:qq.q,v:v});
+  if(v)log(qq.sym.replace(/_/g,' ')+': Yes','fire');
+  qaIdx++;renderQA();
+}
+
+function toggleSym(s,el){
+  if(sel.has(s)){sel.delete(s);el.classList.remove('active');}
+  else{sel.add(s);el.classList.add('active');}
+  renderFactList();
+}
+function renderFactList(){
+  var fl=document.getElementById('fact-list');fl.innerHTML='';
+  if(!sel.size){fl.innerHTML='<div class="no-facts">No symptoms selected</div>';return;}
+  sel.forEach(function(s){
+    var el=document.createElement('div');el.className='fact-item';
+    el.innerHTML=s.replace(/_/g,' ')+'<button class="fact-item-remove" onclick="removeSym(\''+s+'\')">✕</button>';
+    fl.appendChild(el);
+  });
+}
+function removeSym(s){sel.delete(s);var c=document.querySelector('[data-s="'+s+'"]');if(c)c.classList.remove('active');renderFactList();}
+function loadScenario(sc,i){
+  sel.forEach(function(s){var c=document.querySelector('[data-s="'+s+'"]');if(c)c.classList.remove('active');});
+  sel.clear();sc.f.forEach(function(s){sel.add(s);var c=document.querySelector('[data-s="'+s+'"]');if(c)c.classList.add('active');});
+  renderFactList();
+  document.querySelectorAll('.scenario-btn').forEach(function(el,idx){el.classList.toggle('active',idx===i);});
+  log('Scenario loaded: '+sc.n,'info');
+}
+function clearAll(){
+  sel.forEach(function(s){var c=document.querySelector('[data-s="'+s+'"]');if(c)c.classList.remove('active');});
+  sel.clear();fired.clear();renderFactList();
+  KB.forEach(function(r){var c=document.getElementById('rc'+r.id);if(c)c.classList.remove('fired');});
+  document.querySelectorAll('.scenario-btn').forEach(function(e){e.classList.remove('active');});
+  document.getElementById('trace-output').innerHTML='<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div><div class="empty-title">No Inference Run</div><div class="empty-desc">Select symptoms and click Run Inference</div></div>';
+  resetMetrics();setStatus('','Ready — select symptoms and run inference.');log('Workspace cleared.','info');
+}
+
+function runInference(){
+  if(!sel.size){setStatus('error','No symptoms selected. Please choose at least one symptom.');log('No symptoms selected.','err');return;}
+  fired.clear();KB.forEach(function(r){var c=document.getElementById('rc'+r.id);if(c)c.classList.remove('fired');});
+  var facts=new Set(sel),init=new Set(sel),firedR=[],iters=0,idata=[];
+  var sorted=KB.slice().sort(function(a,b){return b.p-a.p;});
+  var used=new Set();
+  setStatus('running','Running forward chaining inference...');
+  log('Inference started — '+facts.size+' initial facts.','info');
+  var changed=true;
+  while(changed){
+    changed=false;iters++;var round=[];
+    sorted.forEach(function(r){
+      if(used.has(r.id))return;
+      if(r.c.every(function(x){return facts.has(x);})){
+        if(!facts.has(r.o)){facts.add(r.o);changed=true;used.add(r.id);firedR.push(r);round.push(r);fired.add(r.id);log('Rule '+r.id+' fired → '+r.o.replace(/_/g,' '),'fire');}
+        else{used.add(r.id);}
+      }
+    });
+    idata.push({i:iters,r:round});
+  }
+  var nf=[];facts.forEach(function(f){if(!init.has(f))nf.push(f);});
+  var hasAlert=nf.some(function(f){return f.startsWith('alert_');});
+  var noMatch=nf.length===0;
+  var conf=computeConf(init,facts);
+  renderTrace(init,idata,nf,conf,hasAlert,noMatch,firedR.length);
+  KB.forEach(function(r){var c=document.getElementById('rc'+r.id);if(c)c.classList.toggle('fired',fired.has(r.id));});
+  updateMetrics(init.size,nf.length,firedR.length,iters,facts.size,hasAlert,noMatch);
+  var msg=noMatch?'No complete rule matched — fallback recommendations shown.':(hasAlert?'Critical case detected — '+nf.length+' facts derived.':'Inference complete — '+nf.length+' facts derived.');
+  setStatus(noMatch?'error':(hasAlert?'error':'success'),msg);
+  log(noMatch?'No full match — fallback shown.':'Inference complete: '+firedR.length+' rules fired, '+nf.length+' new facts.',noMatch?'err':'ok');
+}
+
+function computeConf(init,all){
+  var s=[];
+  KB.filter(function(r){return r.t===2&&!r.id.match(/[b-j]$/);}).forEach(function(r){
+    var m=r.c.filter(function(c){return init.has(c)||all.has(c);}).length;
+    var pct=Math.round((m/r.c.length)*100);
+    if(pct>0)s.push({name:r.o.replace('diagnosis_','').replace(/_/g,' '),pct:pct});
+  });
+  return s.sort(function(a,b){return b.pct-a.pct;}).slice(0,5);
+}
+
+function renderTrace(init,idata,nf,conf,hasAlert,noMatch,firedCount){
+  var ta=document.getElementById('trace-output');ta.innerHTML='';
+  if(hasAlert){
+    var ab=document.createElement('div');ab.className='alert-banner';
+    ab.innerHTML='<div class="alert-dot"></div><strong>Critical Case Detected</strong> — Immediate clinical intervention is required.';
+    ta.appendChild(ab);
+  }
+  ta.appendChild(mkCard('Initial Facts','badge-init',[{k:'Symptoms',v:Array.from(init).map(function(f){return f.replace(/_/g,' ');}).join(' · ')}]));
+  idata.forEach(function(it){
+    if(!it.r.length)return;
+    var d=document.createElement('div');d.className='iter-label';d.innerHTML='<span class="iter-label-text">Iteration '+it.i+'</span><div class="iter-label-line"></div>';ta.appendChild(d);
+    it.r.forEach(function(r){
+      ta.appendChild(mkCard(r.id+' — '+TNAME[r.t]+' Rule',TBADGE[r.t],[
+        {k:'Conditions',v:r.c.map(function(x){return x.replace(/_/g,' ');}).join(' AND '),hl:'highlight-yellow'},
+        {k:'Conclusion',v:r.o.replace(/_/g,' '),hl:THIGH[r.t]},
+        {k:'Reasoning',v:r.d,hl:'muted'},
+      ]));
+    });
+  });
+  if(conf.length){
+    var d2=document.createElement('div');d2.className='iter-label';d2.innerHTML='<span class="iter-label-text">Confidence Analysis</span><div class="iter-label-line"></div>';ta.appendChild(d2);
+    var cc=mkCard('Diagnosis Confidence Score','badge-conf',[{k:'Method',v:'Partial and full rule matching across all diagnostic rules',hl:'muted'}]);
+    var cs=document.createElement('div');cs.className='conf-section';
+    cs.innerHTML='<div class="conf-title">Match Confidence per Diagnosis</div>';
+    conf.forEach(function(s){
+      var col=s.pct===100?'var(--green-600)':s.pct>=60?'var(--blue-600)':s.pct>=40?'var(--yellow-600)':'var(--gray-400)';
+      cs.innerHTML+='<div class="conf-row"><span class="conf-label">'+s.name+'</span><div class="conf-bar-track"><div class="conf-bar-fill" style="width:'+s.pct+'%;background:'+col+'"></div></div><span class="conf-pct" style="color:'+col+'">'+s.pct+'%</span></div>';
+    });
+    cc.appendChild(cs);ta.appendChild(cc);
+  }
+  if(noMatch){
+    var d3=document.createElement('div');d3.className='iter-label';d3.innerHTML='<span class="iter-label-text">Fallback Guidance</span><div class="iter-label-line"></div>';ta.appendChild(d3);
+    var missing={};
+    KB.filter(function(r){return r.t===1&&!r.id.match(/[b-j]$/);}).forEach(function(r){
+      var ms=r.c.filter(function(c){return!init.has(c);});
+      if(ms.length>0&&ms.length<r.c.length)missing[r.o.replace(/_/g,' ')]=ms;
+    });
+    var fb=document.createElement('div');fb.className='fallback-card';
+    var fbH='<div class="fb-title">⚠ Insufficient Data — No Rules Fully Satisfied</div><div class="fb-body">The selected symptoms did not satisfy any complete rule in the knowledge base. To improve the diagnosis, consider the following additional symptoms:<div class="fb-suggestions">';
+    var shown=0;
+    for(var k in missing){
+      if(shown>=4)break;
+      fbH+='<div class="fb-sug-item">To match <strong>'+k+'</strong>, also add: '+missing[k].map(function(x){return x.replace(/_/g,' ');}).join(', ')+'</div>';
+      shown++;
+    }
+    if(!shown)fbH+='<div class="fb-sug-item">No close partial matches found in the current knowledge base.</div>';
+    fbH+='</div><div class="fb-cta">Clinical Recommendation: Please consult a qualified physician for a proper assessment based on the current symptom data.</div></div></div>';
+    fb.innerHTML=fbH;ta.appendChild(fb);
+  }
+  if(nf.length){
+    var d4=document.createElement('div');d4.className='iter-label';d4.innerHTML='<span class="iter-label-text">Summary</span><div class="iter-label-line"></div>';ta.appendChild(d4);
+    var syn=nf.filter(function(f){return f.endsWith('_syndrome');}),dia=nf.filter(function(f){return f.startsWith('diagnosis_');}),trt=nf.filter(function(f){return f.startsWith('treatment_');}),alt=nf.filter(function(f){return f.startsWith('alert_');});
+    function tags(arr,cl){return arr.map(function(f){return '<span class="tag tag-'+cl+'">'+f.replace(/_/g,' ')+'</span>';}).join('');}
+    var inner='';
+    if(syn.length)inner+='<div><div class="summary-group-title">Syndromes Identified</div><div class="tag-row">'+tags(syn,'yellow')+'</div></div>';
+    if(dia.length)inner+='<div><div class="summary-group-title">Diagnoses</div><div class="tag-row">'+tags(dia,'blue')+'</div></div>';
+    if(trt.length)inner+='<div><div class="summary-group-title">Recommended Treatments</div><div class="tag-row">'+tags(trt,'green')+'</div></div>';
+    if(alt.length)inner+='<div><div class="summary-group-title">Alerts</div><div class="tag-row">'+tags(alt,'red')+'</div></div>';
+    var sc=document.createElement('div');sc.className='summary-card';
+    sc.innerHTML='<div class="summary-header">✓ Inference Complete — '+firedCount+' rules fired</div><div class="summary-body">'+inner+'</div>';
+    ta.appendChild(sc);
+  }
+  ta.scrollTop=0;
+}
+
+function mkCard(title,badge,rows){
+  var el=document.createElement('div');el.className='inf-card';
+  var body=rows.map(function(r){return '<div class="inf-row"><span class="inf-key">'+r.k+'</span><span class="inf-val'+(r.hl?' '+r.hl:'')+'">'+r.v+'</span></div>';}).join('');
+  el.innerHTML='<div class="inf-card-header"><span class="inf-card-title">'+title+'</span><span class="badge '+badge+'">'+badge.replace('badge-','')+'</span></div><div class="inf-card-body">'+body+'</div>';
+  return el;
+}
+function updateMetrics(i,d,r,it,tot,alert,noMatch){
+  document.getElementById('kv-f').textContent=tot;document.getElementById('kv-r').textContent=r;document.getElementById('kv-d').textContent=d;document.getElementById('kv-i').textContent=it;
+  document.getElementById('m-i').textContent=i;document.getElementById('m-d').textContent=d;document.getElementById('m-r').textContent=r;document.getElementById('m-it').textContent=it;
+  var s=document.getElementById('m-s');
+  s.textContent=noMatch?'No match':d?(alert?'Critical':'Resolved'):'Inconclusive';
+  s.style.color=noMatch?'var(--yellow-700)':d?(alert?'var(--red-600)':'var(--green-600)'):'var(--gray-500)';
+}
+function resetMetrics(){
+  ['kv-f','kv-r','kv-d','kv-i'].forEach(function(id){document.getElementById(id).textContent='0';});
+  ['m-i','m-d','m-r','m-it'].forEach(function(id){document.getElementById(id).textContent='—';});
+  var s=document.getElementById('m-s');s.textContent='—';s.style.color='var(--gray-900)';
+}
+function setStatus(t,m){
+  var d=document.getElementById('status-dot'),tx=document.getElementById('status-text');
+  d.className='status-indicator'+(t==='running'?' running':t==='success'?' success':t==='error'?' error':'');
+  tx.textContent=m;
+}
+function log(m,t){
+  var b=document.getElementById('log-area'),ts=new Date().toTimeString().slice(0,8);
+  var el=document.createElement('div');el.className='log-line'+(t?' '+t:'');
+  el.innerHTML='<span class="log-ts">'+ts+'</span><span class="log-msg">'+m+'</span>';
+  b.appendChild(el);b.scrollTop=b.scrollHeight;
+}
+function switchTab(n,el){
+  document.querySelectorAll('.tab-btn').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.tab-pane').forEach(function(p){p.classList.remove('active');});
+  el.classList.add('active');document.getElementById('pane-'+n).classList.add('active');
+}
+</script>
+</body>
+</html>
+d Inference Engine</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
